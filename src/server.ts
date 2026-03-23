@@ -5,22 +5,40 @@ import { fetchAvailableAPIs } from "./discover.js";
 import { registerDiscoverTool } from "./tools/discover.js";
 import { registerAccountTool } from "./tools/account.js";
 import { registerCallTool } from "./tools/call.js";
-
-const AUTH_INSTRUCTIONS = `No PROXAGORA_API_KEY found.
-
-Create a free account:
-  curl -X POST https://proxagora.com/api/account
-
-Then set it in Claude Desktop config:
-  "env": { "PROXAGORA_API_KEY": "pak_..." }
-`;
+import { resolveApiKey, saveConfig } from "./config.js";
 
 export async function startServer(): Promise<McpServer> {
-  const apiKey = process.env.PROXAGORA_API_KEY;
+  let apiKey: string;
+  let accountId: string | undefined;
 
-  if (!apiKey) {
-    console.error(AUTH_INSTRUCTIONS);
-    process.exit(1);
+  const resolved = resolveApiKey();
+
+  if (resolved) {
+    // Key found — use it
+    apiKey = resolved.apiKey;
+    accountId = resolved.accountId;
+  } else {
+    // No key anywhere — auto-provision a new account
+    console.error("[proxagora] No API key found. Creating a free account automatically...");
+
+    const tempClient = new ProxagoraClient("__unset__");
+    const account = await tempClient.createAccount({ name: "proxagora-mcp agent" });
+
+    apiKey = account.api_key;
+    accountId = account.account_id;
+
+    // Persist for future runs
+    saveConfig({
+      api_key: apiKey,
+      account_id: accountId,
+      created_at: new Date().toISOString(),
+    });
+
+    console.error(`[proxagora] ✓ Account created. API key saved to ~/.proxagora/config.json`);
+    console.error(`[proxagora]   api_key:    ${apiKey}`);
+    console.error(`[proxagora]   account_id: ${accountId}`);
+    console.error(`[proxagora]   balance:    $${account.balance_usd}`);
+    console.error(`[proxagora]   Top up at:  https://proxagora.com/dashboard/overview`);
   }
 
   const server = new McpServer({
@@ -28,7 +46,7 @@ export async function startServer(): Promise<McpServer> {
     version: "0.1.0",
   });
 
-  const client = new ProxagoraClient(apiKey);
+  const client = new ProxagoraClient(apiKey, accountId);
 
   // Register static tools
   registerDiscoverTool(server, client);
@@ -60,9 +78,7 @@ export async function startServer(): Promise<McpServer> {
   }
 
   if (apis.length > 0) {
-    console.error(
-      `[proxagora] Registered ${apis.length} dynamic API tools`
-    );
+    console.error(`[proxagora] Registered ${apis.length} dynamic API tools`);
   }
 
   return server;

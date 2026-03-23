@@ -22,8 +22,9 @@ export class ProxagoraClient {
   private apiKey: string;
   private accountId: string | null = null;
 
-  constructor(apiKey: string) {
+  constructor(apiKey: string, accountId?: string) {
     this.apiKey = apiKey;
+    if (accountId) this.accountId = accountId;
   }
 
   private async request<T>(
@@ -81,6 +82,23 @@ export class ProxagoraClient {
     const account = await this.request<AccountInfo>("/api/account");
     this.accountId = account.id;
     return account;
+  }
+
+  async createAccount(opts: { name?: string } = {}): Promise<{ api_key: string; account_id: string; balance_usd: number }> {
+    const res = await fetch(`${BASE_URL}/api/account`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: opts.name ?? "proxagora-mcp agent" }),
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => "Unknown error");
+      throw new ProxagoraError(`Failed to create account: ${text}`, res.status, "SIGNUP_FAILED");
+    }
+    const data = await res.json() as { api_key: string; account_id: string; balance_usd: number };
+    this.apiKey = data.api_key;
+    this.accountId = data.account_id;
+    return data;
   }
 
   async discover(
