@@ -1,16 +1,26 @@
 {
-  "name": "proxagora-mcp",
+  "name": "@sideeyelabs/proxagora-mcp",
   "version": "0.1.0",
-  "description": "MCP server for Proxagora — gives Claude access to 20+ data APIs with per-call micropayments",
+  "description": "MCP server for Proxagora \u2014 gives Claude access to 20+ data APIs with per-call micropayments",
   "main": "dist/index.js",
-  "bin": { "proxagora-mcp": "dist/index.js" },
+  "bin": {
+    "proxagora-mcp": "dist/index.js"
+  },
   "scripts": {
     "build": "tsc",
     "dev": "ts-node src/index.ts",
     "start": "node dist/index.js",
     "prepublishOnly": "npm run build"
   },
-  "keywords": ["mcp", "claude", "anthropic", "api-marketplace", "ai-agents", "proxagora", "model-context-protocol"],
+  "keywords": [
+    "mcp",
+    "claude",
+    "anthropic",
+    "api-marketplace",
+    "ai-agents",
+    "proxagora",
+    "model-context-protocol"
+  ],
   "homepage": "https://proxagora.com",
   "repository": {
     "type": "git",

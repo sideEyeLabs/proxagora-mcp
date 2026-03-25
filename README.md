@@ -16,7 +16,7 @@ Just add this to your Claude Desktop config and restart — it auto-creates a fr
   "mcpServers": {
     "proxagora": {
       "command": "npx",
-      "args": ["-y", "proxagora-mcp"]
+      "args": ["-y", "@sideeyelabs/proxagora-mcp"]
     }
   }
 }
@@ -36,7 +36,7 @@ curl -X POST https://proxagora.com/api/account
   "mcpServers": {
     "proxagora": {
       "command": "npx",
-      "args": ["-y", "proxagora-mcp"],
+      "args": ["-y", "@sideeyelabs/proxagora-mcp"],
       "env": {
         "PROXAGORA_API_KEY": "pak_your_key_here"
       }
