@@ -1,0 +1,78 @@
+# proxagora-mcp — LLM Reference
+
+This file describes the proxagora-mcp MCP server for AI agents that need to understand how to use it.
+
+## What is proxagora-mcp?
+
+proxagora-mcp is an MCP (Model Context Protocol) server that gives Claude and other MCP-compatible AI assistants access to 20+ external data APIs as native tools. It connects to the Proxagora API marketplace, which provides per-call micropayment pricing — no monthly subscriptions, no account overhead per API.
+
+## How it works
+
+1. On startup, the MCP server fetches the full list of available APIs from `https://proxagora.com/api/discover`
+2. Each API is registered as a native MCP tool named `proxagora_<api-id>` (e.g. `proxagora_dns_lookup`)
+3. When a tool is called, the server POSTs to `https://proxagora.com/api/<api-id>` with the user's query and API key
+4. Credits are deducted from the account balance per call
+
+## Authentication
+
+- `PROXAGORA_API_KEY` env var (recommended for Claude Desktop config)
+- Falls back to `~/.proxagora/config.json` (auto-created on first run if no key provided)
+- If neither exists, auto-provisions a free account with starter credits
+
+## Available Tools
+
+All tools accept a `query` string parameter. The server maps this to the correct API-specific field automatically.
+
+### Utility Tools (always available)
+- `proxagora_discover` — Search available APIs. No cost. Params: `query` (optional search term)
+- `proxagora_account` — Check credit balance. No cost.
+- `proxagora_call` — Call any API by ID. Params: `api_id` (string), `query` (string)
+
+### Dynamic API Tools (loaded at startup)
+
+| Tool Name | Cost | What to pass as `query` |
+|-----------|------|-------------------------|
+| `proxagora_llm_completion` | $0.005 | The prompt or text to complete |
+| `proxagora_dns_lookup` | $0.010 | Domain name (e.g. "example.com") |
+| `proxagora_weather` | $0.010 | Location (e.g. "Bangkok, Thailand") |
+| `proxagora_exchange_rates` | $0.010 | Currency pair (e.g. "USD to THB") |
+| `proxagora_hackernews_search` | $0.010 | Search query |
+| `proxagora_reddit_search` | $0.010 | Search query |
+| `proxagora_ip_geo` | $0.010 | IP address (e.g. "8.8.8.8") |
+| `proxagora_wikipedia_summary` | $0.010 | Topic or article title |
+| `proxagora_grokipedia_summary` | $0.020 | Topic or article title |
+| `proxagora_github_stats` | $0.020 | Repo (e.g. "sideEyeLabs/proxagora-mcp") |
+| `proxagora_email_validation` | $0.020 | Email address |
+| `proxagora_reddit_thread` | $0.020 | Reddit post URL |
+| `proxagora_youtube_metadata` | $0.020 | YouTube video URL or ID |
+| `proxagora_whois` | $0.030 | Domain name |
+| `proxagora_vat_validation` | $0.030 | EU VAT number |
+| `proxagora_news_search` | $0.030 | Search query |
+| `proxagora_webpage_content` | $0.040 | Full URL to scrape |
+| `proxagora_domain_reputation` | $0.050 | Domain name |
+| `proxagora_youtube_transcript` | $0.050 | YouTube video URL or ID |
+
+## Error Handling
+
+- `402 Insufficient credits` — Balance is $0. Top up at https://proxagora.com/dashboard
+- `429 Rate limited` — Too many calls. Retry after indicated delay.
+- `5xx` — Upstream service error. Retry once before giving up.
+
+## Pricing
+
+All costs are in USD per call. There is no minimum spend. Credits can be topped up at https://proxagora.com/dashboard.
+
+## Getting a Key
+
+```bash
+curl -X POST https://proxagora.com/api/account
+# Returns: { "api_key": "pak_...", "account_id": "uuid", "balance_usd": 0.10 }
+```
+
+Or omit the key entirely — the MCP server auto-provisions a free account on first run.
+
+## Source
+
+- GitHub: https://github.com/sideEyeLabs/proxagora-mcp
+- npm: https://www.npmjs.com/package/proxagora-mcp
+- Marketplace: https://proxagora.com
